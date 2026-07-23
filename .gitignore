@@ -1,1 +1,4 @@
 **/.DS_Store
+echo "*.avi" >> .gitignore
+echo "__pycache__/" >> .gitignore
+echo "pixi-list.txt" >> .gitignore

@@ -1,32 +1,24 @@
 [workspace]
 authors = ["ssunsonic <erictsun02@gmail.com>"]
 channels = ["conda-forge"]
-description = "Add a short description here"
+description = "Bat counting with YOLOv11 and SORT optimized for edge deployment"
 name = "2025_lagattuta_bats"
 platforms = ["linux-aarch64"]
 version = "0.1.0"
 
 [tasks]
 
-[system-requirements]
-cuda = "12.9"
-
 [dependencies]
-cuda = ">=12.9,<13"
-pytorch = {version=">=2.10,<2.11", build="*cuda129*"}
-ultralytics = ">=8.3.62,<9"
-torchvision = ">=0.25,<0.26"
-scikit-image = ">=0.25.1,<0.26"
-filterpy = ">=1.4.5,<2"
-opencv = ">=4.11.0,<5"
-ipdb = ">=0.13.13,<0.14"
-ruff = ">=0.9.6,<0.10"
-pandas = ">=2.2.3,<3"
-ipython = ">=8.32.0,<9"
+python = "==3.12"
+ffmpeg = "*"
 numpy = ">=1.26,<2"
 scipy = ">=1.11,<2"
-ffmpeg = "*"
+pandas = ">=2.2.3,<3"
+scikit-image = ">=0.25.1,<0.26"
 matplotlib = ">=3.8,<4"
-lap = "*"
 
 [pypi-dependencies]
+ultralytics = ">=8.3.62,<9"
+filterpy = ">=1.4.5,<2"
+lap = "*"
+opencv-python = "==4.10.0.84"
