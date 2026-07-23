@@ -1,4 +1,4 @@
-# BatCount-Edge
+# Bat-Count-Edge
 
 This project focuses on bringing real-time thermal bat detection and counting to edge computing devices.
 
