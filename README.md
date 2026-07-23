@@ -10,7 +10,7 @@ The goal of this project is to adapt and optimize an existing thermal-video bat 
 
 # Credits & Attribution
 
-This project is a fork of the original repository:
+This project is a continuation of the original repository:
 
 **Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT**  
 https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT
