@@ -1,0 +1,78 @@
+name: "bat-counter-yolov11-sort"
+namespace: "waggle"
+version: "0.1.0"
+description: "Thermal-video bat detection and tracking using YOLO11 + SORT. Counts unique bat trajectories from a live camera stream and publishes the count via pywaggle. Adapted from the Bat-Counting-YOLOv11-SORT project for edge deployment."
+authors: "Noah <nbetoshana@noreply>"
+collaborators: "Sarah Lagattuta;Eric Sun"
+funding: "NSF Center for Pandemic Insights"
+license: "The license agreed by Argonne National Laboratory"
+keywords: "bat, thermal, yolo, object detection, tracking, wildlife, edge computing, conservation"
+homepage: "https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT"
+source:
+    architectures:
+        - "linux/arm64"
+    url: "https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT"
+    branch: "main"
+
+# NOTE: ECR validation only accepts type "string" and "int" (not float/bool).
+# Float-valued args are declared as string here and parsed numerically at runtime.
+inputs:
+    - id: "camera-source"
+      type: "string"
+      default: "bottom_camera"
+      description: "WES camera name, RTSP URL, or local file path"
+    - id: "interval"
+      type: "int"
+      default: 1
+      description: "Seconds between frame captures (0 = as fast as possible)"
+    - id: "weight"
+      type: "string"
+      default: "/app/models/best.pt"
+      description: "Path to YOLO model weights (baked into the image by default)"
+    - id: "confidence"
+      type: "string"
+      default: "0.10"
+      description: "Detection confidence threshold (float as string)"
+    - id: "imgsz"
+      type: "int"
+      default: 1280
+      description: "YOLO inference image size (lower = faster, less accurate)"
+    - id: "roi"
+      type: "string"
+      default: "0.0 0.0 1.0 1.0"
+      description: "Tracking ROI as 'x0 y0 x1 y1' normalized 0-1"
+    - id: "amplification"
+      type: "string"
+      default: "1.0"
+      description: "Pixel amplification factor before inference (float as string)"
+    - id: "background-subtraction"
+      type: "string"
+      default: "false"
+      description: "Enable inline per-frame background subtraction (true/false as string)"
+    - id: "bg-window"
+      type: "int"
+      default: 30
+      description: "Background subtraction sliding window size in frames"
+    - id: "sort-max-age"
+      type: "int"
+      default: 30
+      description: "SORT max_age parameter"
+    - id: "sort-min-hits"
+      type: "int"
+      default: 5
+      description: "SORT min_hits parameter"
+    - id: "sort-iou-threshold"
+      type: "string"
+      default: "0.10"
+      description: "SORT IoU threshold (float as string)"
+    - id: "publish-summary-interval"
+      type: "int"
+      default: 30
+      description: "Publish a summary count every N frames (0 = every frame)"
+    - id: "max-frames"
+      type: "int"
+      default: 0
+      description: "Stop after N frames (0 = run forever / continuous)"
+
+metadata:
+  ontology: env.count.bat
