@@ -1,2 +1,3 @@
 model,video,bat_counts,detection_confidence,amplification,tracking_region,megadetector_threshold,sort.max_age,sort.min_hits,sort.iou_threshold
 /home/nbetoshana/Bat-Counting-YOLOv11-SORT/models/PB_noaug/weights/best.pt,P0.0.1_grey_converted_bg_subtract.avi,41,0.1,1.0,"[0.0, 0.0, 0.49, 0.7]",,30,5,0.1
+/workspace/mobile-bat-counter/models/PB_noaug/weights/best.pt,P0.0.1_grey_converted_bg_subtract.avi,39,0.1,1.0,"[0.0, 0.0, 0.49, 0.7]",,30,5,0.1

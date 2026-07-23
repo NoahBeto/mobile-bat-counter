@@ -5,3 +5,4 @@ model,video,bat_counts,detection_confidence,amplification,tracking_region,megade
 /home/nbetoshana/noah-sage-grande-summer-of-ai/Bat-Counting-YOLOv11-SORT/models/PB_noaug/weights/best.pt,P1.2.2_grey_converted_bg_subtract.avi,5,0.1,1.0,"[0.0, 0.1, 0.98, 0.54]",,30,5,0.1
 /workspace/Bat-Counting-YOLOv11-SORT/models/PB_noaug/weights/best.pt,P1.2.2_grey_converted_bg_subtract.avi,5,0.1,1.0,"[0.0, 0.1, 0.98, 0.54]",,30,5,0.1
 /workspace/mobile-bat-counter/models/PB_noaug/weights/best.pt,P1.2.2_grey_converted_bg_subtract.avi,5,0.1,1.0,"[0.0, 0.1, 0.98, 0.54]",,30,5,0.1
+/workspace/mobile-bat-counter/models/PB_noaug/weights/best.pt,P1.2.2_grey_converted_bg_subtract.avi,5,0.1,1.0,"[0.0, 0.1, 0.98, 0.54]",,30,5,0.1
