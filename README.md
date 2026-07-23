@@ -143,10 +143,10 @@ print(cv2.__version__)"
 
 Expected output:
 
+- PyTorch installed: `2.13.0+cu130`
 - CUDA available: `True`
-- PyTorch installed
-- Ultralytics installed
-- OpenCV installed
+- Ultralytics installed: `8.4.104`
+- OpenCV installed: `4.10.0`
 
 ---
 
