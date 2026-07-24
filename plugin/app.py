@@ -202,8 +202,10 @@ def main():
                         help="ROI as 'x0 y0 x1 y1' normalized 0-1 (tracking region)")
     parser.add_argument("--amplification", type=float, default=1.0,
                         help="Pixel amplification factor before inference")
-    parser.add_argument("--background-subtraction", default="false",
-                        help="Enable inline background subtraction (true/false). Disabled by default.")
+    parser.add_argument("--background-subtraction", default="true",
+                        help="Enable inline background subtraction (true/false). Default true — "
+                             "the baked-in PB_noaug weights need bg-subtracted frames to detect bats "
+                             "in low-contrast thermal video.")
     parser.add_argument("--bg-window", type=int, default=30,
                         help="Background subtraction sliding window size (frames)")
     parser.add_argument("--sort-max-age", type=int, default=30,

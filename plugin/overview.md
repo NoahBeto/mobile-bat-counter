@@ -108,7 +108,7 @@ parsed numerically at runtime.
 | `imgsz` | `1280` | YOLO inference image size (lower = faster) |
 | `roi` | `"0.0 0.0 1.0 1.0"` | Tracking ROI: `x0 y0 x1 y1` normalized 0-1 |
 | `amplification` | `"1.0"` | Pixel amplification before inference |
-| `background-subtraction` | `"false"` | Enable inline per-frame bg subtraction |
+| `background-subtraction` | `"true"` | Enable inline per-frame bg subtraction |
 | `bg-window` | `30` | Background subtraction sliding window size |
 | `sort-max-age` | `30` | SORT `max_age` |
 | `sort-min-hits` | `5` | SORT `min_hits` |

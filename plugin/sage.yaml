@@ -47,8 +47,8 @@ inputs:
       description: "Pixel amplification factor before inference (float as string)"
     - id: "background-subtraction"
       type: "string"
-      default: "false"
-      description: "Enable inline per-frame background subtraction (true/false as string)"
+      default: "true"
+      description: "Enable inline per-frame background subtraction (true/false as string). Default true — required for the baked-in PB_noaug weights to detect bats in low-contrast thermal video."
     - id: "bg-window"
       type: "int"
       default: 30

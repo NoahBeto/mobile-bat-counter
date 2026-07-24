@@ -30,7 +30,12 @@ sys.modules.setdefault("skimage", _sk_stub)
 sys.modules.setdefault("skimage.io", _sk_io_stub)
 
 from pathlib import Path
-_upstream = Path(__file__).resolve().parents[1] / "sort" / "sort.py"
+
+# Resolve upstream sort.py: container layout has it at /app/sort/sort.py
+# (same dir as this shim). Repo-root dev layout has it at <repo>/sort/sort.py
+# (one parent up). Try local-first so both layouts work without config.
+_local = Path(__file__).resolve().parent / "sort" / "sort.py"
+_upstream = _local if _local.exists() else Path(__file__).resolve().parents[1] / "sort" / "sort.py"
 _exec_ns = {"__name__": "sort_upstream", "__file__": str(_upstream)}
 exec(compile(_upstream.read_text(), str(_upstream), "exec"), _exec_ns)
 

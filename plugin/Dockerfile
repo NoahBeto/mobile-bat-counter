@@ -27,16 +27,26 @@ RUN pip uninstall -y opencv-python opencv-python-headless 2>/dev/null; \
     pip install --no-cache-dir -c /tmp/constraints.txt opencv-python-headless>=4.8.0
 
 # --- pre-bake model weights (edge nodes may not have internet) ---
-# Copy the pretrained bat model from the repo so it's in the image at a known path.
+# Copy the pretrained bat model into the image at a known path.
 # The .pt file is ~5.4 MB so this is a cheap layer.
-COPY models/PB_noaug/weights/best.pt /app/models/best.pt
+#
+# Build context is plugin/, so the weights file lives at plugin/models/best.pt
+# (copied from models/PB_noaug/weights/best.pt, which is outside the build
+# context). See plugin/.gitignore: plugin/models/ is ignored.
+COPY models/best.pt /app/models/best.pt
 ENV BAT_MODEL=/app/models/best.pt
 
+# --- pre-bake sample thermal videos for testing ---
+# Copied from videos/ at the repo root (outside the build context).
+# See plugin/.gitignore: plugin/videos/ is ignored.
+# WORKDIR is /app, so "videos/P1.1.2_grey.mov" resolves to /app/videos/...
+COPY videos/ /app/videos/
+
 # --- copy the plugin code + SORT shim + the upstream sort.py it exec()s ---
-# app.py uses sort_shim which exec()s the real sort/sort.py from the repo root,
-# so we need both the plugin dir and the upstream sort/ directory.
-COPY plugin/app.py /app/app.py
-COPY plugin/sort_shim.py /app/sort_shim.py
+# app.py uses sort_shim which exec()s the real sort/sort.py. Build context is
+# plugin/, so sort.py is vendored at plugin/sort/sort.py (gitignored).
+COPY app.py /app/app.py
+COPY sort_shim.py /app/sort_shim.py
 COPY sort/sort.py /app/sort/sort.py
 
 # offline mode: prevent any runtime model downloads (weights are baked in)

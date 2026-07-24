@@ -28,5 +28,7 @@ scipy = ">=1.11,<2"
 ffmpeg = "*"
 matplotlib = ">=3.8,<4"
 lap = "*"
+ffmpeg-python = ">=0.2.0,<0.3"
 
 [pypi-dependencies]
+pywaggle = ">=0.56.3, <0.57"
