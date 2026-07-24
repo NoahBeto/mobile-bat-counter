@@ -1,77 +1,392 @@
-# mobile-bat-counter
+# Mobile Bat Counter
 
-Real-time thermal bat detection and counting on the edge using YOLOv11 + SORT tracking, adapted for deployment on Sage/Waggle nodes (NVIDIA Thor, ARM64 + CUDA).
+Real-time thermal bat detection and counting on edge computing devices using **YOLOv11 + SORT tracking**.
 
-This project is a fork of the original [Bat-Counting-YOLOv11-SORT](https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT) by Sarah Lagattuta.
+Mobile Bat Counter adapts the original thermal-video bat counting pipeline from:
 
-## Two-Track System
+https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT
 
-This repo contains two independent pipelines that share detection and tracking logic but serve different use cases:
+for deployment on GPU-enabled edge hardware, specifically Sage/Waggle nodes with NVIDIA Thor GPUs.
 
-### 1. Batch Track (Offline Analysis)
+The system detects bats in thermal video using **YOLOv11**, tracks individual bats across frames using **SORT (Simple Online and Realtime Tracking)**, and produces unique bat counts without requiring researchers to manually collect and process video recordings.
 
-```
-src/           — core detection, tracking, and background subtraction modules
-configs/       — YAML configs that specify video files, model weights, and pipeline params
-run_bat_counter.py — CLI wrapper that runs src.tracking with a config file
-```
+---
 
-This is the original pipeline from the upstream fork. It reads `.mov` thermal video files, runs two-pass background subtraction (median of all frames), YOLO detection, SORT tracking, and writes annotated videos + CSV counts. This is designed for offline analysis on an HPC cluster or a server with a folder of recorded videos.
+# Overview
 
-The batch track is untouched from the original repo and still works as-is:
+The original bat counting workflow required:
 
-```bash
-python run_bat_counter.py --config configs/generated/PB_noaug_PB_P1.1.2_grey.mov_BGon_ROIon.yaml
-```
+1. Collecting thermal camera recordings
+2. Downloading videos from field deployments
+3. Running detection and tracking offline
+4. Reviewing generated counts
 
-### 2. Plugin Track (Real-time Edge Deployment)
+Mobile-Bat-Counter moves this processing directly onto an edge device.
 
-```
-plugin/
-  app.py        — main plugin: capture loop, YOLO + SORT, pywaggle publish
-  Dockerfile    — builds on nvcr.io/nvidia/pytorch:25.08-py3 (Blackwell sm_110 kernels)
-  sage.yaml     — ECR metadata + configurable inputs for Sage deployment
-  sort_shim.py  — stubs skimage/matplotlib so sort.py loads without dev deps
-  sort/sort.py  — vendored SORT tracker
-  models/best.pt — baked-in YOLO weights (gitignored, copied at build time)
-  requirements.txt — slim runtime deps
-  overview.md   — detailed plugin documentation
-```
+The deployed system can:
 
-This is the Sage/Waggle edge plugin. It lives in a container on a Thor node, captures frames from a live camera (WES-named, RTSP, or local file for testing), runs inline background subtraction + GPU inference + SORT tracking, and publishes unique bat counts to the Sage data API via pywaggle (`env.count.bat`). It does not write CSVs or annotated videos — the primary output is a published message.
+1. Receive thermal camera footage
+2. Perform background subtraction
+3. Run YOLOv11 bat detection
+4. Track bats using SORT
+5. Generate population counts
+6. Transmit count data instead of raw video
 
-**Build and run on a Thor node:**
+This reduces data transfer requirements and enables near real-time monitoring of bat populations.
+
+---
+
+# Pipeline
 
 ```bash
-# build the container image
+Thermal Camera / Video File
+|
+v
+Frame Capture
+|
+v
+Background Subtraction
+|
+v
+YOLOv11 Detection
+|
+v
+ROI Filtering
+|
+v
+SORT Tracking
+|
+v
+Unique Bat Count
+|
+v
+Sage Data API
+```
+
+---
+
+# Project Structure
+
+```bash
+mobile-bat-counter/
+
+├── plugin/
+│ ├── app.py # Real-time edge plugin
+│ ├── Dockerfile # GPU container definition
+│ ├── requirements.txt # Plugin dependencies
+│ ├── sage.yaml # Sage/Waggle deployment configuration
+│ ├── sort/
+│ │ └── sort.py # SORT tracker
+│ ├── sort_shim.py # Lightweight SORT dependency shim
+│ └── models/
+│ └── best.pt # YOLOv11 weights
+│
+├── src/
+│ ├── tracking.py # Original offline tracking pipeline
+│ ├── detection.py # YOLO detection utilities
+│ └── bg_subtract_new.py # Background subtraction
+│
+├── configs/
+│ ├── videos.list # Video and ROI definitions
+│ └── generated/ # Generated YAML configs
+│
+├── models/
+│ └── PB_noaug/
+│ └── weights/
+│ └── best.pt # Original YOLO weights
+│
+├── sort/
+│ └── sort.py
+│
+├── videos/ # Sample thermal videos
+│
+├── run_bat_counter.py # Offline pipeline entry point
+├── pixi.toml # Offline environment
+├── pixi.lock
+└── README.md
+```
+
+---
+
+# Edge Deployment (Primary Workflow)
+
+The edge plugin runs inside an NVIDIA GPU-enabled container.
+
+The tested deployment environment:
+
+- Hardware: NVIDIA Thor
+- Architecture: ARM64
+- CUDA acceleration: Enabled
+- GPU inference: PyTorch + YOLOv11
+
+---
+
+# Build the Plugin
+
+From the repository root:
+
+```bash
 sudo pluginctl build plugin/
-
-# run with the WES bottom camera (default production source)
-sudo pluginctl run --name bat-counter <image>
-
-# run with an RTSP thermal camera
-sudo pluginctl run --name bat-counter <image> -- \
-    --camera-source "rtsp://user:pass@192.168.1.100:554/stream"
-
-# local test on a sample video (logs to stdout, no publish)
-sudo pluginctl run --name bat-counter <image> -- \
-    --camera-source videos/P1.1.2_grey.mov --max-frames 200 --interval 0
 ```
 
-For full plugin configuration options and local testing instructions, see [plugin/overview.md](plugin/overview.md).
+This creates the plugin container image:
 
-## Model Weights
+```bash
+10.31.81.1:5000/local/plugin
+```
 
-The baked-in weights (`plugin/models/best.pt`) are copied from `models/PB_noaug/weights/best.pt`. This is the PB_noaug model — the same variant referenced by the config names and sample counts in `examples/sample_counts.csv`.
+# Test with a Sample Thermal Video
 
-## Environment
+Run the container directly with GPU access:
 
-- **GPU inference:** requires the NVIDIA PyTorch container (`nvcr.io/nvidia/pytorch:25.08-py3`) which includes Blackwell `sm_110` kernels. The host Pixi environment cannot run GPU inference on Thor (conda-forge PyTorch lacks sm_110 kernels for aarch64).
-- **CPU testing:** works via Pixi locally with `CUDA_VISIBLE_DEVICES=""` — useful for verifying logic, not for real deployment.
-- **Dependencies:** see `plugin/requirements.txt` for the plugin track and `pixi.toml` / `requirements.txt` for the batch track.
+```bash
+podman run --rm -it \
+  --name bat-counter \
+  --device=nvidia.com/gpu=0 \
+  10.31.81.1:5000/local/plugin \
+  --camera-source videos/P1.1.2_grey.mov \
+  --max-frames 200 \
+  --interval 0
+```
 
-## Credits & Attribution
+Expected output:
 
-Core detection and tracking logic adapted from [Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT](https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT).
+```bash
+Loading YOLO model from /app/models/best.pt onto cuda
+torch.cuda.is_available()=True
+...
+Final unique bat count: X
+```
 
-Funding: NSF Center for Pandemic Insights.
+A successful run confirms:
+
+- NVIDIA GPU access
+- CUDA-enabled PyTorch
+- YOLOv11 inference
+- Background subtraction
+- SORT tracking
+- Bat counting
+
+# Camera Sources
+
+The plugin supports three input types.
+
+## 1. Sage/Waggle Camera
+
+Production deployments use WES camera names:
+
+```bash
+--camera-source bottom_camera
+```
+
+The node resolves the camera stream automatically.
+
+## 2. RTSP Camera
+
+Network thermal cameras can be used directly:
+
+```bash
+--camera-source rtsp://camera-address/stream
+```
+
+Example:
+
+```bash
+sudo pluginctl run --name bat-counter <image> -- \
+--camera-source rtsp://user:password@camera-ip:554/stream
+```
+
+## 3. Local Video File
+
+For testing:
+
+```bash
+--camera-source videos/P1.1.2_grey.mov
+```
+
+Use:
+
+```bash
+--max-frames N
+```
+
+to limit processing.
+
+Example:
+
+```bash
+--max-frames 200
+```
+
+# Plugin Configuration
+
+The plugin exposes the following parameters:
+
+| Parameter | Default | Description |
+|---|---|---|
+| `camera-source` | `bottom_camera` | Camera name, RTSP stream, or video file |
+| `interval` | `1` | Seconds between frame captures |
+| `weight` | `/app/models/best.pt` | YOLO model path |
+| `confidence` | `0.10` | Detection confidence threshold |
+| `imgsz` | `1280` | YOLO inference resolution |
+| `roi` | `0.0 0.0 1.0 1.0` | Tracking region |
+| `background-subtraction` | `true` | Enable background subtraction |
+| `bg-window` | `30` | Background history size |
+| `sort-max-age` | `30` | SORT max age |
+| `sort-min-hits` | `5` | SORT minimum detections |
+| `publish-summary-interval` | `30` | Count publishing interval |
+| `max-frames` | `0` | Stop after N frames |
+
+---
+
+# Sage/Waggle Deployment
+
+For deployment through Sage tools:
+
+## Build
+
+```bash
+sudo pluginctl build plugin/
+```
+
+## Run
+
+```bash
+sudo pluginctl run --name bat-counter <image>
+```
+
+The plugin publishes bat counts through:
+
+```bash
+env.count.bat
+```
+
+using:
+
+```bash
+pywaggle
+```
+
+The resulting measurements can be accessed through the Sage data platform.
+
+# Original Offline Pipeline
+Mobile Bat Counter preserves the original offline processing workflow.
+
+The original pipeline:
+
+- Processes recorded thermal videos
+- Uses YAML configurations
+- Runs YOLOv11 detection
+- Uses SORT tracking
+- Generates annotated videos and CSV counts
+
+Run with:
+
+```bash
+pixi run python run_bat_counter.py \
+--config configs/generated/PB_noaug_PB_P1.2.2_grey.mov_BGon_ROIon.yaml
+```
+
+# Offline Environment Setup
+
+Install dependencies:
+
+```bash
+pixi install
+```
+
+Run:
+
+```bash
+pixi run python run_bat_counter.py \
+--config configs/generated/PB_noaug_PB_P1.2.2_grey.mov_BGon_ROIon.yaml
+```
+
+# Performance
+
+The pipeline was tested on NVIDIA Thor edge hardware.
+
+Example performance:
+
+| Metric | Result |
+|---|---|
+| Device | NVIDIA Thor |
+| Model | YOLOv11n |
+| CUDA acceleration | Enabled |
+| Input | Thermal video |
+| Inference time | ~30 ms/frame |
+| Processing mode | Real-time capable |
+
+The plugin successfully performs GPU-accelerated inference and bat counting directly on edge hardware.
+
+---
+
+# Model Information
+
+The YOLO model used by BatCount-Edge:
+
+```bash
+plugin/models/best.pt
+```
+
+is based on the original PB_noaug model from:
+
+https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT
+
+The model was trained for thermal bat detection.
+
+---
+
+# Credits
+
+Original pipeline:
+
+**Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT**
+
+https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT
+
+Adapted for edge deployment as part of the NSF Center for Pandemic Insights project.
+
+---
+
+# Notes
+
+- Large video files are excluded from version control.
+- The plugin is optimized for GPU-enabled edge deployment.
+- The original offline pipeline remains available for research and comparison.
+- The primary output of the edge plugin is bat count data, not annotated video files.
+
+---
+
+# Verified Edge Deployment Workflow
+
+The tested deployment workflow is:
+
+## Build the plugin
+
+```bash
+sudo pluginctl build plugin/
+```
+
+## Run with GPU acceleration
+
+```bash
+podman run --rm -it \
+  --name bat-counter \
+  --device=nvidia.com/gpu=0 \
+  10.31.81.1:5000/local/plugin \
+  --camera-source videos/P1.1.2_grey.mov \
+  --max-frames 200 \
+  --interval 0
+```
+
+This verifies:
+
+- NVIDIA GPU access
+- CUDA-enabled PyTorch
+- YOLOv11 inference
+- Background subtraction
+- SORT tracking
+- Bat counting
+
+This workflow represents the current validated BatCount-Edge deployment path.
