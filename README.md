@@ -141,6 +141,18 @@ Run the container directly with GPU access:
 
 ```bash
 podman run --rm -it \
+  --name <container-name> \
+  --device=nvidia.com/gpu=<gpu-id> \
+  <plugin-image> \
+  --camera-source <video-or-camera-source> \
+  --max-frames <number-of-frames> \
+  --interval <seconds-between-frames>
+```
+
+Example: 
+
+```bash
+podman run --rm -it \
   --name bat-counter \
   --device=nvidia.com/gpu=0 \
   10.31.81.1:5000/local/plugin \
@@ -207,7 +219,7 @@ For testing:
 Use:
 
 ```bash
---max-frames N
+--max-frames <number-of-frames>
 ```
 
 to limit processing.
