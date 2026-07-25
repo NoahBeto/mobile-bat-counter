@@ -24,9 +24,9 @@ while IFS='|' read -r site file coords; do
       safe=$(echo "${m}_${site}_${file}_${v}" | tr '[]() ' '____')
       cfg="$CFG_DIR/${safe}.yaml"
 
-      model_file="$PRJ/models/$m/weights/best.pt"
-      csv="$COUNTS_DIR/${safe}.csv"
-      ann="$ANN_DIR/${safe}"
+      model_file="models/$m/weights/best.pt"
+      csv="results/counts/${safe}.csv"
+      ann="results/annotations/${safe}"
 
       bg_flag=false
       roi_flag=false
@@ -46,7 +46,7 @@ while IFS='|' read -r site file coords; do
         echo "    min_hits: 5"
         echo "  video_files:"
         echo "  - amplification: 1.0"
-        echo "    path: \"$PRJ/videos/$file\""
+        echo "    path: \"videos/$file\""
         if $roi_flag; then
           echo "    tracking_region:"
           printf "    - %s\n" "${coords[@]}"

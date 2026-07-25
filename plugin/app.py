@@ -82,6 +82,8 @@ def open_camera(camera_source: str, test_video: bool = False):
     is_url = "://" in camera_source
     is_file = os.path.exists(camera_source)
 
+    logger.info("Camera source check: %s exists=%s cwd=%s", camera_source, is_file, os.getcwd())
+
     if is_url and camera_source.startswith("rtsp://"):
         logger.info("Opening RTSP stream: %s", camera_source.split("@")[-1])
         cap = cv2.VideoCapture(camera_source, cv2.CAP_FFMPEG)
