@@ -32,6 +32,39 @@ import cv2
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("bat-counter")
 
+# ─── nightly data logging ────────────────────────────────────────────────
+
+def save_nightly_count(count, output_file="data/nightly_counts.csv"):
+    """
+    Save bat count measurements locally for long-term monitoring.
+    """
+    import csv
+    from datetime import datetime
+
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+    file_exists = os.path.exists(output_file)
+
+    with open(output_file, "a", newline="") as f:
+        writer = csv.writer(f)
+
+        if not file_exists:
+            writer.writerow([
+                "timestamp",
+                "bat_count"
+            ])
+
+        writer.writerow([
+            datetime.now().isoformat(),
+            count
+        ])
+
+    logger.info(
+        "Saved nightly count: %d bats -> %s",
+        count,
+        output_file
+    )
+
 
 # ─── camera helpers ────────────────────────────────────────────────────────
 
@@ -352,6 +385,7 @@ def main():
                     logger.info("PUBLISHED env.count.bat = %d (frame %d)", len(unique_ids), frame_count)
                 else:
                     logger.info("PUBLISHED (stdout) env.count.bat = %d (frame %d)", len(unique_ids), frame_count)
+                
                 last_publish_frame = frame_count
 
             # FPS reporting every 500 frames
@@ -369,6 +403,9 @@ def main():
         logger.info("Interrupted by user")
     finally:
         logger.info("Final unique bat count: %d (after %d frames)", len(unique_ids), frame_count)
+
+        save_nightly_count(len(unique_ids))
+        
         if source_type != "wes":
             cap.release()
         if plugin_ctx is not None:
