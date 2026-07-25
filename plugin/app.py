@@ -264,6 +264,8 @@ def main():
                         help="WES camera name, RTSP URL, or local file path")
     parser.add_argument("--interval", type=float, default=1.0,
                         help="Seconds between frame captures (0 = read as fast as possible)")
+    parser.add_argument("--frame-skip", type=int, default=0,
+                        help="Process every Nth frame (0 = every frame)")
     parser.add_argument("--weight", default="/app/models/best.pt",
                         help="Path to YOLO model weights")
     parser.add_argument("--confidence", type=float, default=0.10,
@@ -360,6 +362,7 @@ def main():
     last_publish_frame = -1
     fps_start = time.time()
     fps_frame_count = 0
+    inference_frame_count = 0
 
     plugin_ctx = None
     plugin = None
@@ -389,12 +392,19 @@ def main():
             frame_count += 1
             fps_frame_count += 1
 
+            # skip frames before expensive processing
+            if args.frame_skip > 0:
+                if frame_count % (args.frame_skip + 1) != 0:
+                    continue
+
             # optional background subtraction
             if bg_sub is not None:
                 frame = bg_sub.apply_to_frame(frame)
 
             # YOLO detection + ROI filter
             infer_start = time.time()
+            inference_frame_count += 1
+
             detections = run_inference_with_roi(
                 model, frame, args.amplification, args.confidence,
                 args.imgsz, roi, None,
@@ -410,8 +420,13 @@ def main():
             # periodic logging
             if frame_count <= 5 or frame_count % 100 == 0:
                 logger.info(
-                    "frame=%d detections=%d tracked=%d unique=%d infer=%.1fms",
-                    frame_count, len(detections), len(tracked), len(unique_ids), infer_ms,
+                    "frame=%d inference_frames=%d detections=%d tracked=%d unique=%d infer=%.1fms",
+                    frame_count,
+                    inference_frame_count,
+                    len(detections),
+                    len(tracked),
+                    len(unique_ids),
+                    infer_ms,
                 )
 
             # publish

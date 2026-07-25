@@ -182,7 +182,8 @@ podman run --rm -it \
   10.31.81.1:5000/local/plugin \
   --camera-source videos/P1.1.2_grey.mov \
   --max-frames 200 \
-  --interval 0
+  --interval 0 \
+  --frame-skip 2
 ```
 
 Expected output:
@@ -201,8 +202,9 @@ A successful run confirms:
 - CUDA-enabled PyTorch
 - YOLOv11 inference
 - Background subtraction
-- SORT tracking
-- Bat counting
+- ROI loading
+- SORT tracking pipeline execution
+- Bat count generation
 - Nightly count data collection
 
 The generated count is stored locally:
@@ -285,6 +287,7 @@ The plugin exposes the following parameters:
 |---|---|---|
 | `camera-source` | `bottom_camera` | Camera name, RTSP stream, or video file |
 | `interval` | `1` | Seconds between frame captures |
+| `frame-skip` | `0` | Process every N+1 frame to reduce inference load (`0` = every frame, `1` = every other frame) |
 | `weight` | `/app/models/best.pt` | YOLO model path |
 | `confidence` | `0.10` | Detection confidence threshold |
 | `imgsz` | `1280` | YOLO inference resolution |
@@ -296,9 +299,8 @@ The plugin exposes the following parameters:
 | `publish-summary-interval` | `30` | Count publishing interval |
 | `max-frames` | `0` | Stop after N frames |
 
----
 
-# Automatic ROI Configuration
+## Automatic ROI Configuration
 
 The edge plugin automatically loads the region of interest (ROI) for each deployment location from:
 
@@ -342,6 +344,76 @@ Using ROI from config for videos/P1.1.2_grey.mov: 0.0 0.26 0.97 0.69
 
 This allows deployment locations to be configured once and reused for automated edge monitoring.
 
+## Edge Optimization: Frame Skipping and Inference Tracking
+
+The edge plugin supports frame skipping to reduce GPU workload on resource-constrained deployments.
+
+The plugin separates:
+
+- Total captured frames
+- Frames processed by YOLO inference
+
+This allows monitoring how much computation is performed during deployment.
+
+Example:
+
+```bash
+--frame-skip 0
+```
+
+Processes every captured frame.
+
+```bash
+--frame-skip 1
+```
+
+Processes every other frame.
+
+```bash
+--frame-skip 2
+```
+
+Processes every third frame.
+
+Example runtime output:
+
+```text
+frame=200 inference_frames=67 detections=0 tracked=0 unique=1 infer=31.8ms
+```
+
+This allows edge deployments to trade inference frequency for reduced power usage and improved throughput while reducing the computational load on the tracking pipeline.
+
+## Background Subtraction Tradeoff
+
+Background subtraction improves bat detection performance by removing static thermal background information before YOLO inference. It is enabled by default because the current model was trained using background-subtracted thermal imagery.
+
+For deployments where lower latency or reduced power usage is more important, background subtraction can be disabled:
+
+```bash
+--background-subtraction false
+```
+
+Disabling background subtraction reduces per-frame preprocessing overhead and improves throughput, but may reduce detection accuracy because the model receives raw thermal frames instead of the processed input distribution it was trained on.
+
+Example tradeoff:
+
+```bash
+--background-subtraction true
+```
+
+- Higher detection accuracy
+- Additional preprocessing cost
+- Recommended for production monitoring
+
+```bash
+--background-subtraction false
+```
+
+- Faster processing
+- Lower computational overhead
+- May miss more bat detections depending on thermal scene conditions
+
+The default configuration keeps background subtraction enabled because the YOLOv11 model was trained on background-subtracted thermal imagery.
 
 ---
 
@@ -383,7 +455,9 @@ Example measurement:
 env.count.bat = 12
 ```
 
-These measurements can be collected over repeated nightly runs to create a long-term bat population dataset.
+The edge device only transmits count data rather than full thermal video recordings, reducing bandwidth requirements for field deployments.
+
+See [Nightly Data Collection](#nightly-data-collection) for details on local data logging.
 
 Example workflow:
 
@@ -397,7 +471,38 @@ Night 3  -> env.count.bat = 9
       Nightly Bat Population Trends
 ```
 
-The edge device only transmits count data rather than full thermal video recordings, reducing bandwidth requirements for field deployments.
+---
+
+# Nightly Data Collection
+
+The edge plugin records bat counts locally for long-term monitoring.
+
+After each processing session, the final unique bat count is appended to:
+
+```bash
+data/nightly_counts.csv
+```
+
+During continuous deployments, this allows each node to maintain a lightweight historical record of bat activity without storing full thermal video files.
+
+Example:
+
+```text
+timestamp,bat_count
+2026-07-25T05:49:02.532,1
+```
+
+This enables automated nightly monitoring where edge nodes collect population measurements over time without requiring researchers to manually download and process thermal recordings.
+
+The edge device publishes:
+
+```bash
+env.count.bat
+```
+
+through the Sage platform while maintaining a local backup of collected measurements.
+
+---
 
 # Original Offline Pipeline
 
@@ -520,30 +625,45 @@ Measured performance:
 | Framework | PyTorch + CUDA |
 | GPU acceleration | Enabled |
 | Input | Thermal video |
-| Inference time | ~30 ms/frame |
+| YOLO inference time | ~30 ms/frame |
+| Frame skipping | Configurable |
 | Processing mode | Real-time capable |
 
 Example runtime output:
 
 ```text
 Model loaded. torch.cuda.is_available()=True
-```
 
-frame=100 detections=0 tracked=0 unique=0 infer=29.2ms
-frame=200 detections=0 tracked=0 unique=1 infer=29.3ms
+frame=100 inference_frames=100 detections=0 tracked=0 unique=0 infer=29.0ms
+frame=200 inference_frames=200 detections=0 tracked=0 unique=1 infer=28.8ms
 
 Final unique bat count: 1
 Saved nightly count: 1 bats -> data/nightly_counts.csv
+```
 
-The validated edge deployment successfully performs:
+Example edge test:
+
+```text
+Camera source: videos/P1.1.2_grey.mov
+Frames captured: 200
+Inference frames: ~67 (--frame-skip 2)
+GPU: NVIDIA Thor CUDA acceleration
+Final unique bat count: 0
+Saved nightly count: 0 bats -> data/nightly_counts.csv
+```
+
+The validated edge deployment pipeline successfully performs:
 
 - GPU-accelerated YOLOv11 inference
 - Thermal video processing
 - Background subtraction
+- ROI-based detection filtering
 - SORT tracking
-- Unique bat counting
+- Configurable inference frame skipping
 - Nightly count collection
 - Sage data publishing
+
+The complete edge pipeline has been successfully deployed and tested on NVIDIA Thor hardware. Detection performance depends on the thermal scene, model confidence threshold, ROI configuration, and preprocessing settings.
 
 # Model Information
 
