@@ -178,6 +178,7 @@ podman run --rm -it \
   --device=nvidia.com/gpu=0 \
   -v $(pwd)/videos:/app/videos \
   -v $(pwd)/data:/app/data \
+  -v $(pwd)/configs:/app/configs \
   10.31.81.1:5000/local/plugin \
   --camera-source videos/P1.1.2_grey.mov \
   --max-frames 200 \

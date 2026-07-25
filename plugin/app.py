@@ -65,6 +65,43 @@ def save_nightly_count(count, output_file="data/nightly_counts.csv"):
         output_file
     )
 
+def load_roi_from_config(source, config_file="configs/videos.list"):
+    """
+    Load ROI automatically from videos.list.
+
+    Format:
+        location|video_source|x1 y1 x2 y2
+    """
+    if not os.path.exists(config_file):
+        logger.info("ROI config not found: %s", config_file)
+        return None
+
+    source_name = os.path.basename(source)
+
+    with open(config_file, "r") as f:
+        for line in f:
+            line = line.strip()
+
+            if not line or line.startswith("#"):
+                continue
+
+            parts = line.split("|")
+
+            if len(parts) != 3:
+                continue
+
+            _, video, roi = parts
+
+            if video == source_name:
+                logger.info(
+                    "Loaded ROI from config for %s: %s",
+                    source_name,
+                    roi
+                )
+                return roi
+
+    logger.info("No ROI found for %s", source_name)
+    return None
 
 # ─── camera helpers ────────────────────────────────────────────────────────
 
@@ -264,7 +301,23 @@ def main():
         logger.warning("pywaggle not available — running in local-test mode (publish to stdout)")
 
     # --- parse ROI ---
-    roi = parse_roi(args.roi)
+    config_roi = load_roi_from_config(args.camera_source)
+
+    if config_roi:
+        roi = parse_roi(config_roi)
+        logger.info(
+            "Using ROI from config for %s: %s",
+            args.camera_source,
+            config_roi
+        )
+    else:
+        roi = parse_roi(args.roi)
+        logger.info(
+            "Using ROI from command line: %s",
+            args.roi
+        )
+
+    logger.info("Using ROI: %s", roi)
 
     # --- import sort (stubbed skimage/matplotlib via sort_shim) ---
     from sort_shim import Sort
