@@ -1,8 +1,8 @@
-# Mobile Bat Counter
+# Sage Bat Counter
 
 Real-time thermal bat detection and counting on edge computing devices using **YOLOv11 + SORT tracking**.
 
-Mobile Bat Counter adapts the original thermal-video bat counting pipeline from:
+Sage Bat Counter adapts the original thermal-video bat counting pipeline from:
 
 https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT
 
@@ -21,7 +21,7 @@ The original bat counting workflow required:
 3. Running detection and tracking offline
 4. Reviewing generated counts
 
-Mobile-Bat-Counter moves this processing directly onto Sage/Waggle edge devices.
+Sage Bat Counter moves this processing directly onto Sage/Waggle edge devices.
 
 The deployed system performs:
 
@@ -506,7 +506,7 @@ through the Sage platform while maintaining a local backup of collected measurem
 
 # Original Offline Pipeline
 
-Mobile Bat Counter preserves the original offline processing workflow from the research pipeline.
+Sage Bat Counter preserves the original offline processing workflow from the research pipeline.
 
 The offline pipeline is useful for:
 
