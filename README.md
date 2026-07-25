@@ -288,13 +288,60 @@ The plugin exposes the following parameters:
 | `weight` | `/app/models/best.pt` | YOLO model path |
 | `confidence` | `0.10` | Detection confidence threshold |
 | `imgsz` | `1280` | YOLO inference resolution |
-| `roi` | `0.0 0.0 1.0 1.0` | Tracking region |
+| `roi` | `0.0 0.0 1.0 1.0` | Manual ROI override (used if no config ROI is found) |
 | `background-subtraction` | `true` | Enable background subtraction |
 | `bg-window` | `30` | Background history size |
 | `sort-max-age` | `30` | SORT max age |
 | `sort-min-hits` | `5` | SORT minimum detections |
 | `publish-summary-interval` | `30` | Count publishing interval |
 | `max-frames` | `0` | Stop after N frames |
+
+---
+
+# Automatic ROI Configuration
+
+The edge plugin automatically loads the region of interest (ROI) for each deployment location from:
+
+```bash
+configs/videos.list
+```
+
+Each entry defines:
+
+```bash
+<location>|<video filename>|<normalized ROI>
+```
+
+Example:
+
+```bash
+PB|P1.1.2_grey.mov|0.0 0.26 0.97 0.69
+```
+
+When a video source is provided, the plugin automatically matches the filename and applies the corresponding ROI during inference.
+
+Example:
+
+```bash
+podman run ... \
+--camera-source videos/P1.1.2_grey.mov
+```
+
+The user does not need to manually provide the ROI:
+
+```bash
+--roi "0.0 0.26 0.97 0.69"
+```
+
+The plugin loads the configuration automatically:
+
+```text
+Loaded ROI from config for P1.1.2_grey.mov: 0.0 0.26 0.97 0.69
+Using ROI from config for videos/P1.1.2_grey.mov: 0.0 0.26 0.97 0.69
+```
+
+This allows deployment locations to be configured once and reused for automated edge monitoring.
+
 
 ---
 
