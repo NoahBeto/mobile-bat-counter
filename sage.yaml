@@ -4,9 +4,7 @@ version: "0.1.0"
 description: "Thermal-video bat detection and tracking using YOLO11 + SORT. Counts unique bat trajectories from a live camera stream and publishes the count via pywaggle. Adapted from the Bat-Counting-YOLOv11-SORT project for edge deployment."
 authors: "Sarah Lagattuta (original pipeline); Noah Betoshana; Liam Fitzpatrick (Sage Bat Counter adaptation)"
 funding: "NSF Center for Pandemic Insights"
-license: "The license agreed by Argonne National Laboratory"
-keywords: "bat, thermal, yolo, object detection, tracking, wildlife, edge computing, conservation"
-homepage: "https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT"
+homepage: "https://github.com/NoahBeto/mobile-bat-counter"
 source:
     architectures:
         - "linux/arm64"
