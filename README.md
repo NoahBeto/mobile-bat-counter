@@ -92,7 +92,6 @@ mobile-bat-counter/
 │ ├── app.py                        # Real-time edge plugin
 │ ├── Dockerfile                    # GPU container definition
 │ ├── requirements.txt              # Plugin dependencies
-│ ├── sage.yaml                     # Sage deployment configuration
 │ ├── sort/
 │ │ └── sort.py                     # SORT tracker
 │ ├── sort_shim.py                  # Lightweight SORT dependency shim
@@ -121,7 +120,8 @@ mobile-bat-counter/
 ├── run_bat_counter.py              # Offline pipeline entry point
 ├── pixi.toml                       # Offline development environment
 ├── pixi.lock
-└── README.md
+├── README.md
+└── sage.yaml                     # Sage deployment configuration
 ```
 
 ---
