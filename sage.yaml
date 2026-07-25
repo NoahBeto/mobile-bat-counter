@@ -11,7 +11,7 @@ source:
     url: "https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT"
     branch: "main"
 
-baseCommand: "python plugin/app.py"
+baseCommand: "python plugin/app.py --side stream"
 arguments: ""
 
 # NOTE: ECR validation only accepts type "string" and "int" (not float/bool).
