@@ -16,4 +16,4 @@ RUN CONDA_OVERRIDE_CUDA=12.9 /root/.pixi/bin/pixi install
 
 COPY . .
 
-CMD ["bash"]
+CMD ["python", "plugin/app.py", "--side", "stream"]
