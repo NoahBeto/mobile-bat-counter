@@ -8,7 +8,7 @@ homepage: "https://github.com/NoahBeto/mobile-bat-counter"
 source:
     architectures:
         - "linux/arm64"
-    url: "https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT"
+    url: "https://github.com/NoahBeto/mobile-bat-counter"
     branch: "main"
 
 # NOTE: ECR validation only accepts type "string" and "int" (not float/bool).
