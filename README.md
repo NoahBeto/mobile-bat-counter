@@ -78,13 +78,15 @@ Nightly Population Dataset
 
 The edge device performs all detection and tracking locally.
 
-Rather than storing and transmitting full thermal videos, the system publishes bat count measurements:
+Rather than storing and transmitting full thermal videos, the system publishes lightweight bat count measurements through the Sage measurement pipeline:
 
 ```bash
 env.count.bat = <number_of_detected_bats>
 ```
 
-These measurements can be collected over time to create nightly population datasets for ecological monitoring and long-term analysis.
+Measurements are sent through PyWaggle to the local Sage message broker running on the edge node. The Sage runtime then forwards these measurements to the Sage cloud platform, where they can be stored, visualized, and analyzed over time.
+
+These measurements can be collected into nightly population datasets for ecological monitoring and long-term analysis.
 
 ---
 
@@ -158,9 +160,11 @@ The edge node performs all computationally intensive processing locally:
 
 Only count measurements are transmitted, significantly reducing bandwidth requirements compared to transferring raw thermal video recordings.
 
-The plugin container was successfully tested using Podman with direct NVIDIA GPU access.
+The plugin container was successfully tested using Podman with direct NVIDIA GPU access, validating the complete edge inference pipeline including GPU acceleration, YOLOv11 detection, ROI filtering, SORT tracking, and bat count generation.
 
-The intended Kubernetes deployment workflow through `pluginctl` could not be fully validated because the NVIDIA Kubernetes Device Plugin was not active on the test node. Additional details are provided in the Kubernetes GPU Scheduling section.
+For production Sage deployments, the plugin should be launched through `pluginctl run`. This provides the Sage runtime environment required by PyWaggle to communicate with the local Sage message broker and forward measurements to the Sage cloud platform.
+
+The Kubernetes GPU scheduling workflow through `pluginctl` could not be fully validated because the NVIDIA Kubernetes Device Plugin was not active on the test node. Additional details are provided in the Kubernetes GPU Scheduling section.
 
 ---
 
@@ -525,16 +529,10 @@ The plugin performs:
 - Unique count generation
 - Sage measurement publishing
 
-Counts are published through:
+Counts are published through PyWaggle using:
 
 ```bash
 env.count.bat
-```
-
-through:
-
-```bash
-pywaggle
 ```
 
 Example measurement:
@@ -542,6 +540,26 @@ Example measurement:
 ```bash
 env.count.bat = 12
 ```
+
+The Sage measurement path is:
+
+```text
+Sage Bat Counter Plugin
+|
+v
+PyWaggle
+|
+v
+Local Sage Message Broker
+|
+v
+Sage Cloud Platform
+|
+v
+Dashboard Visualization
+```
+
+PyWaggle does not directly send data to the internet. Instead, it communicates with the local Sage broker running on the node. When deployed through `pluginctl run`, the Sage runtime automatically provides the required broker configuration and authentication.
 
 The edge device transmits only count information rather than full thermal recordings, reducing bandwidth and storage requirements.
 
@@ -556,6 +574,41 @@ Night 3  -> env.count.bat = 9
               v
       Nightly Bat Population Trends
 ```
+
+## Sage Runtime and Data Publishing
+
+Sage Bat Counter relies on the Sage runtime environment to publish measurements to the Sage cloud platform.
+
+The complete measurement flow is:
+
+```text
+Plugin
+|
+v
+PyWaggle Measurement
+|
+v
+Local Sage Broker
+|
+v
+Sage Cloud
+|
+v
+Dashboard
+```
+
+PyWaggle packages each measurement with metadata including:
+
+- Measurement key (`env.count.bat`)
+- Timestamp
+- Measurement value
+- Node identity information
+
+The Sage infrastructure handles forwarding, authentication, and associating measurements with the correct edge node.
+
+For this reason, production deployments should use `pluginctl run`, which automatically provides the environment variables required for PyWaggle communication with the local broker.
+
+Standalone Podman execution is useful for validating GPU inference and the bat counting pipeline, but it does not automatically provide the Sage runtime communication layer required for dashboard publishing.
 
 ## Kubernetes GPU Scheduling Note
 
@@ -590,6 +643,8 @@ As a result, Kubernetes could not schedule workloads requesting:
 ```
 
 The plugin container itself was successfully validated using Podman with direct NVIDIA GPU access.
+
+Podman validation confirms that the edge AI pipeline executes correctly. Full Sage cloud publishing requires deployment through the Sage runtime environment so that PyWaggle can communicate with the node's local broker.
 
 ---
 
@@ -868,5 +923,5 @@ Adapted for edge deployment as part of the NSF Center for Pandemic Insights proj
 - Large thermal video files are excluded from version control.
 - The plugin is optimized for GPU-enabled Sage/Waggle edge deployment.
 - The original offline pipeline remains available for research validation and comparison.
-- The primary output of the edge plugin is bat count data rather than annotated video files.
+- The primary output of the edge plugin is Sage bat count measurements rather than annotated video files.
 - The plugin container includes model weights, ROI configuration, and test data required for standalone execution.
