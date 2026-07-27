@@ -168,6 +168,21 @@ The Kubernetes GPU scheduling workflow through `pluginctl` could not be fully va
 
 ---
 
+## Prepare the Plugin Directory
+
+The plugin is built using the plugin/ directory as the build context. Before building, copy the required project files into the plugin directory:
+
+```bash
+mkdir -p plugin/models
+cp models/PB_noaug/weights/best.pt plugin/models/best.pt
+
+mkdir -p plugin/videos
+cp -r videos/* plugin/videos/
+
+mkdir -p plugin/sort
+cp sort/sort.py plugin/sort/
+```
+
 ## Build the Plugin
 
 From the repository root, build the Sage/Waggle plugin container:
