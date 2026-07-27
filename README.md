@@ -87,7 +87,6 @@ These measurements can be collected over time to build nightly bat population da
 
 ```bash
 mobile-bat-counter/
-
 ├── plugin/                         # Sage/Waggle edge deployment
 │ ├── app.py                        # Real-time edge plugin
 │ ├── Dockerfile                    # GPU container definition
@@ -117,20 +116,21 @@ mobile-bat-counter/
 │ ├── videos.list
 │ └── generated/
 │
-├── run_bat_counter.py              # Offline pipeline entry point
+├── Dockerfile                      # Development container setup
 ├── pixi.toml                       # Offline development environment
 ├── pixi.lock
 ├── README.md
-└── sage.yaml                     # Sage deployment configuration
+├── run_bat_counter.py              # Offline pipeline entry point
+└── sage.yaml                       # Sage deployment configuration
 ```
 
 ---
 
 # Edge Deployment (Primary Workflow)
 
-The primary deployment workflow runs the bat counter as a GPU-enabled Sage/Waggle plugin.
+The primary deployment workflow runs the bat counter as a GPU-enabled Sage/Waggle plugin container.
 
-The plugin runs inside a container on NVIDIA Thor edge hardware and performs real-time thermal bat detection, tracking, and count publishing.
+The plugin runs on NVIDIA Thor edge hardware and performs real-time thermal bat detection, tracking, and count publishing.
 
 The tested deployment environment:
 
@@ -139,8 +139,11 @@ The tested deployment environment:
 - GPU acceleration: NVIDIA CUDA
 - Inference framework: PyTorch + YOLOv11
 - Deployment platform: Sage/Waggle
+- Container runtime: NVIDIA-enabled Podman
 
 The edge device performs local processing and publishes bat counts through the Sage data platform, allowing long-term automated monitoring without transferring raw thermal video.
+
+The plugin container was tested using Podman with NVIDIA GPU access enabled. Kubernetes GPU scheduling through `pluginctl` could not be tested because the NVIDIA Kubernetes Device Plugin was not available on the node.
 
 ---
 
@@ -166,11 +169,13 @@ The container includes:
 - Background subtraction
 - Sage/Waggle data publishing support
 
+The generated image can be executed directly using the NVIDIA container runtime through Podman for GPU testing.
+
 ## Test with a Sample Thermal Video
 
 A local thermal video can be used to verify the complete edge pipeline before connecting a live camera.
 
-Run:
+The plugin container can be tested directly with NVIDIA GPU access through Podman:
 
 ```bash
 podman run --rm -it \
@@ -427,12 +432,19 @@ The bat counter is designed to run continuously as a Sage/Waggle edge plugin.
 sudo pluginctl build plugin/
 ```
 
-## Run
+## Running the GPU Container
 
-For a live Sage/Waggle deployment:
+The validated deployment workflow uses the NVIDIA container runtime through Podman:
 
 ```bash
-sudo pluginctl run --name bat-counter <image>
+podman run --rm -it \
+  --name bat-counter \
+  --device=nvidia.com/gpu=0 \
+  -v $(pwd)/videos:/app/videos \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/configs:/app/configs \
+  10.31.81.1:5000/local/plugin \
+  --camera-source bottom_camera
 ```
 
 The plugin captures thermal imagery, performs bat detection and tracking locally, and publishes count measurements through the Sage platform.
@@ -456,6 +468,36 @@ env.count.bat = 12
 ```
 
 The edge device only transmits count data rather than full thermal video recordings, reducing bandwidth requirements for field deployments.
+
+## Kubernetes GPU Scheduling Note
+
+The intended Sage deployment method is through pluginctl. The following command represents the intended Sage/Waggle deployment workflow:
+
+```bash
+sudo pluginctl run \
+  --name sage-bat-counter \
+  --selector kubernetes.io/hostname=00004cbb4713c0b9.agx-thor \
+  --resource nvidia.com/gpu=1 \
+  10.31.81.1:5000/local/plugin \
+  -- \
+  --camera-source bottom_camera
+```
+
+However, the test node did not advertise GPU resources to Kubernetes. The node did not report:
+
+```text
+nvidia.com/gpu: 1
+```
+
+because the NVIDIA Kubernetes Device Plugin was not active.
+
+As a result, Kubernetes could not schedule GPU workloads requesting:
+
+```bash
+--resource nvidia.com/gpu=1
+```
+
+The plugin container itself was successfully validated using Podman with direct NVIDIA GPU access.
 
 See [Nightly Data Collection](#nightly-data-collection) for details on local data logging.
 
@@ -547,17 +589,47 @@ This workflow remains available for research and validation, while the Sage/Wagg
 
 # Development Environment
 
-Docker and pixi are provided for development and reproducing the original offline environment.
+Docker and pixi are provided for development, testing, and reproducing the research environment.
 
-The Sage/Waggle deployment does not require running the offline pixi environment. The production workflow uses the GPU-enabled plugin container built with:
+The Sage/Waggle deployment uses the GPU-enabled plugin container built with:
 
 ```bash
 sudo pluginctl build plugin/
 ```
 
+The production container runs with NVIDIA CUDA support through the container runtime.
+
+### `plugin/app.py`
+
+Change:
+
+```python
+default=os.environ.get("CAMERA_SOURCE", "videos/P1.1.2_grey.mov")
+```
+
+to
+
+```python
+default=os.environ.get("CAMERA_SOURCE", "bottom_camera")
+```
+
+### sage.yaml
+
+Change:
+
+```yaml
+default: "videos/P1.1.2_grey.mov"
+```
+
+to
+
+```yaml
+default: "bottom_camera"
+```
+
 ---
 
-## Running with Docker
+## Development Container
 
 Docker can be used to create a reproducible development environment containing CUDA, PyTorch, YOLO, and computer vision dependencies.
 
@@ -657,17 +729,17 @@ The validated edge deployment pipeline successfully performs:
 - GPU-accelerated YOLOv11 inference
 - Thermal video processing
 - Background subtraction
-- ROI-based detection filtering
+- ROI detection filtering
 - SORT tracking
 - Configurable inference frame skipping
 - Nightly count collection
 - Sage data publishing
 
-The complete edge pipeline has been successfully deployed and tested on NVIDIA Thor hardware. Detection performance depends on the thermal scene, model confidence threshold, ROI configuration, and preprocessing settings.
+The complete edge pipeline has been successfully validated and tested on NVIDIA Thor hardware using the NVIDIA container runtime. Deployment through Kubernetes GPU scheduling requires NVIDIA Device Plugin support on the node.
 
 # Model Information
 
-The YOLO model used by BatCount-Edge:
+The YOLO model used by Sage Bat Counter:
 
 ```bash
 plugin/models/best.pt

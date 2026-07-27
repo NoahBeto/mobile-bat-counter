@@ -256,42 +256,22 @@ class RunningBackgroundSubtractor:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Bat counting edge plugin (YOLO11 + SORT)",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument("--camera-source", default="bottom_camera",
-                        help="WES camera name, RTSP URL, or local file path")
-    parser.add_argument("--interval", type=float, default=1.0,
-                        help="Seconds between frame captures (0 = read as fast as possible)")
-    parser.add_argument("--frame-skip", type=int, default=0,
-                        help="Process every Nth frame (0 = every frame)")
-    parser.add_argument("--weight", default="/app/models/best.pt",
-                        help="Path to YOLO model weights")
-    parser.add_argument("--confidence", type=float, default=0.10,
-                        help="Detection confidence threshold")
-    parser.add_argument("--imgsz", type=int, default=1280,
-                        help="YOLO inference image size")
-    parser.add_argument("--roi", default="0.0 0.0 1.0 1.0",
-                        help="ROI as 'x0 y0 x1 y1' normalized 0-1 (tracking region)")
-    parser.add_argument("--amplification", type=float, default=1.0,
-                        help="Pixel amplification factor before inference")
-    parser.add_argument("--background-subtraction", default="true",
-                        help="Enable inline background subtraction (true/false). Default true — "
-                             "the baked-in PB_noaug weights need bg-subtracted frames to detect bats "
-                             "in low-contrast thermal video.")
-    parser.add_argument("--bg-window", type=int, default=30,
-                        help="Background subtraction sliding window size (frames)")
-    parser.add_argument("--sort-max-age", type=int, default=30,
-                        help="SORT max_age parameter")
-    parser.add_argument("--sort-min-hits", type=int, default=5,
-                        help="SORT min_hits parameter")
-    parser.add_argument("--sort-iou-threshold", type=float, default=0.10,
-                        help="SORT IoU threshold")
-    parser.add_argument("--publish-summary-interval", type=int, default=30,
-                        help="Publish a summary count every N frames (0 = every frame)")
-    parser.add_argument("--max-frames", type=int, default=0,
-                        help="Stop after N frames (0 = run forever)")
+    parser = argparse.ArgumentParser(description="Bat counting edge plugin (YOLO11 + SORT)", formatter_class=argparse.RawDescriptionHelpFormatter, )
+    parser.add_argument("--camera-source", default=os.environ.get("CAMERA_SOURCE", "bottom_camera"), help="WES camera name, RTSP URL, or local file path")
+    parser.add_argument("--interval", type=float, default=float(os.environ.get("INTERVAL", "1.0")), help="Seconds between frame captures (0 = read as fast as possible)")
+    parser.add_argument("--frame-skip", type=int, default=0, help="Process every Nth frame (0 = every frame)")
+    parser.add_argument("--weight", default="/app/models/best.pt", help="Path to YOLO model weights")
+    parser.add_argument("--confidence", type=float, default=0.10, help="Detection confidence threshold")
+    parser.add_argument("--imgsz", type=int, default=1280, help="YOLO inference image size")
+    parser.add_argument("--roi", default="0.0 0.0 1.0 1.0", help="ROI as 'x0 y0 x1 y1' normalized 0-1 (tracking region)")
+    parser.add_argument("--amplification", type=float, default=1.0, help="Pixel amplification factor before inference")
+    parser.add_argument("--background-subtraction", default="true", help="Enable inline background subtraction (true/false). Default true — " "the baked-in PB_noaug weights need bg-subtracted frames to detect bats " "in low-contrast thermal video.")
+    parser.add_argument("--bg-window", type=int, default=30, help="Background subtraction sliding window size (frames)")
+    parser.add_argument("--sort-max-age", type=int, default=30, help="SORT max_age parameter")
+    parser.add_argument("--sort-min-hits", type=int, default=5, help="SORT min_hits parameter")
+    parser.add_argument("--sort-iou-threshold", type=float, default=0.10, help="SORT IoU threshold")
+    parser.add_argument("--publish-summary-interval", type=int, default=30, help="Publish a summary count every N frames (0 = every frame)")
+    parser.add_argument("--max-frames", type=int, default=int(os.environ.get("MAX_FRAMES", "0")), help="Stop after N frames (0 = run forever)")
     args = parser.parse_args()
 
     # --- decide publish mode: pywaggle if available, else log-only for local testing ---

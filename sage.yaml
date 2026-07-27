@@ -16,7 +16,7 @@ source:
 inputs:
     - id: "camera-source"
       type: "string"
-      default: "bottom_camera"
+      default: "videos/P1.1.2_grey.mov"
       description: "WES camera name, RTSP URL, or local file path"
     - id: "interval"
       type: "int"
@@ -24,7 +24,7 @@ inputs:
       description: "Seconds between frame captures (0 = as fast as possible)"
     - id: "weight"
       type: "string"
-      default: "/app/models/best.pt"
+      default: "/workspace/mobile-bat-counter/models/PB_noaug/weights/best.pt"
       description: "Path to YOLO model weights (baked into the image by default)"
     - id: "confidence"
       type: "string"
