@@ -619,9 +619,9 @@ The expected deployment workflow is:
 ```bash
 sudo pluginctl run \
   --name sage-bat-counter \
-  --selector kubernetes.io/hostname=00004cbb4713c0b9.agx-thor \
+  --selector kubernetes.io/hostname=<sage-node-hostname> \
   --resource nvidia.com/gpu=1 \
-  10.31.81.1:5000/local/plugin \
+  <registry>/<image-name> \
   -- \
   --camera-source bottom_camera
 ```
