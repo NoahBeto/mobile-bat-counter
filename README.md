@@ -1,47 +1,52 @@
 # Sage Bat Counter
 
-Real-time thermal bat detection and counting on edge computing devices using **YOLOv11 + SORT tracking**.
+Real-time thermal bat detection and population monitoring on GPU-enabled edge computing devices using **YOLOv11 + SORT tracking**.
 
-Sage Bat Counter adapts the original thermal-video bat counting pipeline from:
+Sage Bat Counter adapts the original thermal-video bat counting pipeline developed in:
 
 https://github.com/Sarah-Lagattuta/Bat-Counting-YOLOv11-SORT
 
-for deployment on GPU-enabled edge hardware, specifically Sage/Waggle nodes with NVIDIA Thor GPUs.
+and extends it for deployment on **Sage/Waggle edge computing infrastructure** with NVIDIA Thor GPU acceleration.
 
-The system detects bats in thermal video using **YOLOv11**, tracks individual bats across frames using **SORT (Simple Online and Realtime Tracking)**, and produces unique bat counts without requiring researchers to manually collect and process video recordings.
+The system performs real-time thermal bat detection using **YOLOv11**, tracks individual bats across consecutive frames using **SORT (Simple Online and Realtime Tracking)**, and generates automated bat population measurements directly on edge hardware.
+
+By moving inference and tracking from a remote workstation to the deployment device, Sage Bat Counter eliminates the need for researchers to manually collect, transfer, and process large thermal video recordings.
 
 ---
 
 # Overview
 
-The original bat counting workflow required:
+Traditional thermal bat monitoring workflows require:
 
-1. Collecting thermal camera recordings
-2. Downloading videos from field deployments
-3. Running detection and tracking offline
-4. Reviewing generated counts
+1. Recording thermal camera footage in the field
+2. Retrieving and transferring large video files
+3. Running detection and tracking pipelines offline
+4. Reviewing generated results manually
 
-Sage Bat Counter moves this processing directly onto Sage/Waggle edge devices.
+This workflow creates challenges for long-term monitoring because thermal recordings can require significant storage, bandwidth, and processing resources.
 
-The deployed system performs:
+Sage Bat Counter moves the complete processing pipeline directly onto Sage/Waggle edge nodes.
 
-1. Thermal camera capture
-2. Background subtraction
-3. YOLOv11 bat detection
-4. ROI filtering
-5. SORT tracking
-6. Unique bat counting
-7. Publishing count measurements through the Sage platform
+The deployed edge system performs:
 
-Instead of transferring large thermal video files, the edge device processes the footage locally and transmits only bat count measurements.
+1. Thermal camera acquisition
+2. Thermal frame preprocessing
+3. Background subtraction
+4. YOLOv11 bat detection
+5. Region-of-interest (ROI) filtering
+6. SORT multi-object tracking
+7. Unique bat counting
+8. Publishing measurements through the Sage platform
 
-This enables long-term automated monitoring of bat populations through nightly data collection.
+Instead of transferring complete thermal recordings, the edge device processes video locally and transmits only lightweight count measurements.
+
+This enables autonomous, long-term bat monitoring where edge nodes can collect nightly population data with minimal communication overhead.
 
 ---
 
 # Pipeline
 
-The edge deployment pipeline runs continuously on a Sage/Waggle node:
+The Sage Bat Counter edge pipeline continuously processes thermal imagery on a Sage/Waggle node:
 
 ```bash
 Thermal Camera
@@ -62,7 +67,7 @@ v
 SORT Tracking
 |
 v
-Unique Bat Count
+Unique Bat Counting
 |
 v
 Sage Data API
@@ -71,15 +76,15 @@ v
 Nightly Population Dataset
 ```
 
-The edge device processes thermal video locally and publishes bat count measurements instead of storing or transmitting full recordings.
+The edge device performs all detection and tracking locally.
 
-Each run produces a count measurement:
+Rather than storing and transmitting full thermal videos, the system publishes bat count measurements:
 
 ```bash
 env.count.bat = <number_of_detected_bats>
 ```
 
-These measurements can be collected over time to build nightly bat population datasets for long-term monitoring.
+These measurements can be collected over time to create nightly population datasets for ecological monitoring and long-term analysis.
 
 ---
 
@@ -87,151 +92,176 @@ These measurements can be collected over time to build nightly bat population da
 
 ```bash
 mobile-bat-counter/
-├── plugin/                         # Sage/Waggle edge deployment
-│ ├── app.py                        # Real-time edge plugin
-│ ├── Dockerfile                    # GPU container definition
+├── plugin/                         # Sage/Waggle edge deployment plugin
+│ ├── app.py                        # Real-time bat counting application
+│ ├── Dockerfile                    # GPU-enabled plugin container
 │ ├── requirements.txt              # Plugin dependencies
 │ ├── sort/
-│ │ └── sort.py                     # SORT tracker
-│ ├── sort_shim.py                  # Lightweight SORT dependency shim
+│ │ └── sort.py                     # SORT tracking implementation
+│ ├── sort_shim.py                  # Lightweight SORT compatibility layer
 │ └── models/
-│   └── best.pt                     # YOLOv11 weights
+│   └── best.pt                     # YOLOv11 inference weights
 │
 ├── videos/                         # Sample thermal videos for testing
 │
 ├── data/                           # Generated bat count measurements
-│ └── nightly_counts.csv            # Published nightly counts
+│ └── nightly_counts.csv            # Local nightly count history
 │
 ├── models/
 │ └── PB_noaug/
 │   └── weights/
-│       └── best.pt                 # Original YOLO weights
+│       └── best.pt                 # Original research model weights
 │
-├── src/                            # Original offline pipeline code
+├── src/                            # Original offline processing pipeline
 │ ├── tracking.py
 │ ├── detection.py
 │ └── bg_subtract_new.py
 │
-├── configs/                        # Offline pipeline configurations
-│ ├── videos.list
-│ └── generated/
+├── configs/                        # Pipeline configuration files
+│ ├── videos.list                   # Video and ROI configuration
+│ └── generated/                    # Generated experiment configs
 │
-├── Dockerfile                      # Development container setup
+├── Dockerfile                      # Development container configuration
 ├── pixi.toml                       # Offline development environment
 ├── pixi.lock
 ├── README.md
 ├── run_bat_counter.py              # Offline pipeline entry point
-└── sage.yaml                       # Sage deployment configuration
+└── sage.yaml                       # Sage/Waggle deployment metadata
 ```
 
 ---
 
 # Edge Deployment (Primary Workflow)
 
-The primary deployment workflow runs the bat counter as a GPU-enabled Sage/Waggle plugin container.
+The primary deployment workflow runs Sage Bat Counter as a GPU-enabled Sage/Waggle edge plugin.
 
-The plugin runs on NVIDIA Thor edge hardware and performs real-time thermal bat detection, tracking, and count publishing.
+The plugin is designed to execute continuously on edge hardware, performing thermal video processing, bat detection, tracking, and count publishing without requiring an external processing server.
 
-The tested deployment environment:
+The validated deployment environment includes:
 
-- Hardware: NVIDIA Thor
-- Architecture: ARM64
-- GPU acceleration: NVIDIA CUDA
-- Inference framework: PyTorch + YOLOv11
-- Deployment platform: Sage/Waggle
-- Container runtime: NVIDIA-enabled Podman
+- **Hardware:** NVIDIA Thor
+- **Architecture:** ARM64
+- **GPU Acceleration:** NVIDIA CUDA
+- **Inference Framework:** PyTorch + YOLOv11
+- **Deployment Platform:** Sage/Waggle
+- **Container Runtime:** NVIDIA-enabled Podman
 
-The edge device performs local processing and publishes bat counts through the Sage data platform, allowing long-term automated monitoring without transferring raw thermal video.
+The edge node performs all computationally intensive processing locally:
 
-The plugin container was tested using Podman with NVIDIA GPU access enabled. Kubernetes GPU scheduling through `pluginctl` could not be tested because the NVIDIA Kubernetes Device Plugin was not available on the node.
+1. Captures thermal imagery
+2. Applies preprocessing and background subtraction
+3. Runs YOLOv11 inference
+4. Filters detections using the configured ROI
+5. Tracks bats across frames using SORT
+6. Generates unique bat counts
+7. Publishes measurements through the Sage platform
+
+Only count measurements are transmitted, significantly reducing bandwidth requirements compared to transferring raw thermal video recordings.
+
+The plugin container was successfully tested using Podman with direct NVIDIA GPU access.
+
+The intended Kubernetes deployment workflow through `pluginctl` could not be fully validated because the NVIDIA Kubernetes Device Plugin was not active on the test node. Additional details are provided in the Kubernetes GPU Scheduling section.
 
 ---
 
 ## Build the Plugin
 
-From the repository root:
+From the repository root, build the Sage/Waggle plugin container:
 
 ```bash
 sudo pluginctl build plugin/
 ```
 
-This builds the Sage/Waggle plugin container image:
+This creates the plugin image:
 
 ```bash
 10.31.81.1:5000/local/plugin
 ```
 
-The container includes:
+The generated container includes all required components for standalone edge execution:
 
 - CUDA-enabled PyTorch
 - YOLOv11 model weights
-- SORT tracking
-- Background subtraction
-- Sage/Waggle data publishing support
+- SORT tracking implementation
+- Background subtraction pipeline
+- ROI configuration support
+- Sage/Waggle data publishing functionality
 
-The generated image can be executed directly using the NVIDIA container runtime through Podman for GPU testing.
+The resulting image can be executed directly using NVIDIA GPU access through Podman for testing and validation.
 
 ## Test with a Sample Thermal Video
 
-A local thermal video can be used to verify the complete edge pipeline before connecting a live camera.
+Before connecting a live thermal camera, the complete edge pipeline can be validated using a recorded thermal video.
 
-The plugin container can be tested directly with NVIDIA GPU access through Podman:
+Run the plugin container with GPU access:
 
 ```bash
 podman run --rm -it \
   --name bat-counter \
   --device=nvidia.com/gpu=0 \
-  -v $(pwd)/videos:/app/videos \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/configs:/app/configs \
   10.31.81.1:5000/local/plugin \
   --camera-source videos/P1.1.2_grey.mov \
-  --max-frames 200 \
-  --interval 0 \
-  --frame-skip 2
+  --interval 0
 ```
 
-Expected output:
+A successful execution produces output similar to:
 
-```bash
+```text
 Loading YOLO model from /app/models/best.pt onto cuda
 torch.cuda.is_available()=True
 ...
+PUBLISHED env.count.bat = X
+Video ended (EOF)
 Final unique bat count: X
 Saved nightly count: X bats -> data/nightly_counts.csv
 ```
 
-A successful run confirms:
+A successful run verifies the complete edge workflow:
 
-- NVIDIA GPU access
-- CUDA-enabled PyTorch
+- NVIDIA GPU availability
+- CUDA-enabled PyTorch execution
 - YOLOv11 inference
+- Thermal frame preprocessing
 - Background subtraction
-- ROI loading
-- SORT tracking pipeline execution
-- Bat count generation
-- Nightly count data collection
+- Automatic ROI loading
+- SORT tracking
+- Unique bat counting
+- Nightly measurement generation
 
-The generated count is stored locally:
+The generated count is stored inside the running container:
 
 ```bash
 data/nightly_counts.csv
 ```
 
-Example:
+For persistent storage outside the container, mount a host directory:
+
+```bash
+-v $(pwd)/data:/app/data
+```
+
+Example output:
 
 ```bash
 timestamp,bat_count
 2026-07-25T04:08:20.539841,1
 ```
 
+This allows edge nodes to maintain historical bat activity records while avoiding the storage requirements of full thermal video archives.
+
 # Camera Sources
 
-The plugin supports three camera input modes.
+Sage Bat Counter supports multiple input sources depending on the deployment scenario.
+
+The plugin can process:
+
+- Sage/Waggle camera streams
+- RTSP network camera streams
+- Recorded thermal video files
 
 ## 1. Sage/Waggle Camera (Production)
 
-Production deployments use Sage/Waggle camera names.
+Production deployments use Sage/Waggle camera identifiers.
 
 Example:
 
@@ -239,13 +269,13 @@ Example:
 --camera-source bottom_camera
 ```
 
-The node automatically resolves the camera stream through the Sage/Waggle camera interface.
+The plugin automatically resolves the camera stream through the Sage/Waggle camera interface.
 
-This is the intended mode for long-term field deployments and nightly bat monitoring.
+This is the recommended configuration for autonomous field deployments where the edge node continuously monitors bat activity.
 
 ## 2. RTSP Camera
 
-Network thermal cameras can be accessed through an RTSP stream.
+Thermal cameras that provide an RTSP stream can be used directly.
 
 Example:
 
@@ -253,16 +283,18 @@ Example:
 --camera-source rtsp://camera-address/stream
 ```
 
-Example:
+Example deployment:
 
 ```bash
 sudo pluginctl run --name bat-counter <image> -- \
 --camera-source rtsp://user:password@camera-ip:554/stream
 ```
 
+This mode allows the plugin to process network-connected thermal cameras without requiring local video files.
+
 ## 3. Local Thermal Video (Testing)
 
-Local video files can be used to validate the pipeline before deployment.
+Recorded thermal videos can be used to validate the pipeline before deploying with a live camera.
 
 Example:
 
@@ -270,7 +302,7 @@ Example:
 --camera-source videos/P1.1.2_grey.mov
 ```
 
-For testing, limit processing using:
+For shorter validation runs, processing can be limited:
 
 ```bash
 --max-frames <number-of-frames>
@@ -282,38 +314,39 @@ Example:
 --max-frames 200
 ```
 
-Local video testing verifies the same detection, tracking, and counting pipeline used for live Sage/Waggle camera deployments.
+Local video testing uses the same detection, tracking, and counting pipeline as live Sage/Waggle deployments, allowing deployment behavior to be verified before field installation.
 
 # Plugin Configuration
 
-The plugin exposes the following parameters:
+The Sage Bat Counter plugin exposes configuration parameters that control camera input, inference behavior, tracking settings, and data publishing.
 
 | Parameter | Default | Description |
 |---|---|---|
-| `camera-source` | `bottom_camera` | Camera name, RTSP stream, or video file |
-| `interval` | `1` | Seconds between frame captures |
-| `frame-skip` | `0` | Process every N+1 frame to reduce inference load (`0` = every frame, `1` = every other frame) |
-| `weight` | `/app/models/best.pt` | YOLO model path |
-| `confidence` | `0.10` | Detection confidence threshold |
-| `imgsz` | `1280` | YOLO inference resolution |
-| `roi` | `0.0 0.0 1.0 1.0` | Manual ROI override (used if no config ROI is found) |
-| `background-subtraction` | `true` | Enable background subtraction |
-| `bg-window` | `30` | Background history size |
-| `sort-max-age` | `30` | SORT max age |
-| `sort-min-hits` | `5` | SORT minimum detections |
-| `publish-summary-interval` | `30` | Count publishing interval |
-| `max-frames` | `0` | Stop after N frames |
+| `camera-source` | `bottom_camera` | Input source: Sage/Waggle camera, RTSP stream, or thermal video file |
+| `interval` | `1` | Time between frame captures in seconds |
+| `frame-skip` | `0` | Number of frames skipped between YOLO inference runs (`0` = every frame, `1` = every other frame) |
+| `weight` | `/app/models/best.pt` | Path to YOLOv11 model weights |
+| `confidence` | `0.10` | YOLO detection confidence threshold |
+| `imgsz` | `1280` | YOLO inference image resolution |
+| `roi` | `0.0 0.0 1.0 1.0` | Manual ROI override if no configured ROI exists |
+| `background-subtraction` | `true` | Enable thermal background subtraction preprocessing |
+| `bg-window` | `30` | Background subtraction history window size |
+| `sort-max-age` | `30` | Maximum number of frames SORT tracks remain active without detections |
+| `sort-min-hits` | `5` | Minimum detections required before confirming a track |
+| `publish-summary-interval` | `30` | Interval for publishing count summaries |
+| `max-frames` | `0` | Stop processing after a fixed number of frames (`0` = unlimited) |
 
+---
 
-## Automatic ROI Configuration
+# Automatic ROI Configuration
 
-The edge plugin automatically loads the region of interest (ROI) for each deployment location from:
+The edge plugin automatically loads deployment-specific regions of interest (ROI) from:
 
 ```bash
 configs/videos.list
 ```
 
-Each entry defines:
+Each configuration entry follows the format:
 
 ```bash
 <location>|<video filename>|<normalized ROI>
@@ -325,40 +358,49 @@ Example:
 PB|P1.1.2_grey.mov|0.0 0.26 0.97 0.69
 ```
 
-When a video source is provided, the plugin automatically matches the filename and applies the corresponding ROI during inference.
+The ROI values represent normalized coordinates:
+
+```bash
+x_min y_min x_max y_max
+```
+
+When a thermal video source is provided, the plugin automatically identifies the matching configuration entry and applies the correct ROI during inference.
 
 Example:
 
 ```bash
-podman run ... \
---camera-source videos/P1.1.2_grey.mov
+podman run --rm -it \
+  --device=nvidia.com/gpu=0 \
+  10.31.81.1:5000/local/plugin \
+  --camera-source videos/P1.1.2_grey.mov \
+  --interval 0
 ```
 
-The user does not need to manually provide the ROI:
+The user does not need to manually specify:
 
 ```bash
 --roi "0.0 0.26 0.97 0.69"
 ```
 
-The plugin loads the configuration automatically:
+Instead, the plugin loads the configured ROI automatically:
 
 ```text
 Loaded ROI from config for P1.1.2_grey.mov: 0.0 0.26 0.97 0.69
 Using ROI from config for videos/P1.1.2_grey.mov: 0.0 0.26 0.97 0.69
 ```
 
-This allows deployment locations to be configured once and reused for automated edge monitoring.
+This allows each deployment location to be configured once and reused for automated monitoring.
 
 ## Edge Optimization: Frame Skipping and Inference Tracking
 
-The edge plugin supports frame skipping to reduce GPU workload on resource-constrained deployments.
+Edge hardware has limited computational resources compared to traditional servers. Sage Bat Counter includes frame skipping controls to reduce GPU workload while maintaining tracking performance.
 
-The plugin separates:
+The plugin tracks two separate quantities:
 
 - Total captured frames
 - Frames processed by YOLO inference
 
-This allows monitoring how much computation is performed during deployment.
+This provides visibility into how much computation is performed during deployment.
 
 Example:
 
@@ -386,47 +428,77 @@ Example runtime output:
 frame=200 inference_frames=67 detections=0 tracked=0 unique=1 infer=31.8ms
 ```
 
-This allows edge deployments to trade inference frequency for reduced power usage and improved throughput while reducing the computational load on the tracking pipeline.
+Frame skipping allows deployments to balance:
+
+- GPU utilization
+- Power consumption
+- Processing throughput
+- Detection frequency
+
+This provides flexibility for deployments with different hardware constraints or monitoring requirements.
 
 ## Background Subtraction Tradeoff
 
-Background subtraction improves bat detection performance by removing static thermal background information before YOLO inference. It is enabled by default because the current model was trained using background-subtracted thermal imagery.
+Background subtraction improves bat detection by removing static thermal scene information before YOLO inference.
 
-For deployments where lower latency or reduced power usage is more important, background subtraction can be disabled:
+The current YOLOv11 model was trained using background-subtracted thermal imagery, so background subtraction is enabled by default.
 
-```bash
---background-subtraction false
-```
-
-Disabling background subtraction reduces per-frame preprocessing overhead and improves throughput, but may reduce detection accuracy because the model receives raw thermal frames instead of the processed input distribution it was trained on.
-
-Example tradeoff:
+Enable background subtraction:
 
 ```bash
 --background-subtraction true
 ```
 
-- Higher detection accuracy
-- Additional preprocessing cost
+Advantages:
+
+- Higher detection consistency
+- Matches the model training pipeline
 - Recommended for production monitoring
+
+Tradeoffs:
+
+- Additional preprocessing overhead
+- Slightly increased latency
+- Increased computational requirements
+
+For deployments where throughput or power efficiency is prioritized, background subtraction can be disabled:
 
 ```bash
 --background-subtraction false
 ```
 
-- Faster processing
-- Lower computational overhead
-- May miss more bat detections depending on thermal scene conditions
+Advantages:
 
-The default configuration keeps background subtraction enabled because the YOLOv11 model was trained on background-subtracted thermal imagery.
+- Faster frame processing
+- Reduced preprocessing cost
+- Lower GPU workload
+
+Tradeoffs:
+
+- Input distribution differs from model training data
+- Detection accuracy may decrease depending on thermal conditions
+
+The default configuration keeps background subtraction enabled because it provides the closest match to the training environment of the YOLOv11 model.
 
 ---
 
 # Sage/Waggle Deployment
 
-The bat counter is designed to run continuously as a Sage/Waggle edge plugin.
+Sage Bat Counter is designed to operate continuously as a Sage/Waggle edge plugin.
+
+The intended deployment workflow is:
+
+1. Build the plugin container
+2. Deploy the container on a Sage/Waggle node
+3. Connect the thermal camera source
+4. Run autonomous bat monitoring
+5. Publish nightly bat count measurements
+
+The edge node performs all detection and tracking locally, allowing long-term monitoring without transferring large thermal video files.
 
 ## Build
+
+Build the plugin image:
 
 ```bash
 sudo pluginctl build plugin/
@@ -440,16 +512,20 @@ The validated deployment workflow uses the NVIDIA container runtime through Podm
 podman run --rm -it \
   --name bat-counter \
   --device=nvidia.com/gpu=0 \
-  -v $(pwd)/videos:/app/videos \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/configs:/app/configs \
   10.31.81.1:5000/local/plugin \
-  --camera-source bottom_camera
+  --camera-source bottom_camera \
+  --interval 0
 ```
 
-The plugin captures thermal imagery, performs bat detection and tracking locally, and publishes count measurements through the Sage platform.
+The plugin performs:
 
-Counts are published using:
+- Thermal image acquisition
+- YOLOv11 inference
+- Bat tracking
+- Unique count generation
+- Sage measurement publishing
+
+Counts are published through:
 
 ```bash
 env.count.bat
@@ -467,41 +543,9 @@ Example measurement:
 env.count.bat = 12
 ```
 
-The edge device only transmits count data rather than full thermal video recordings, reducing bandwidth requirements for field deployments.
+The edge device transmits only count information rather than full thermal recordings, reducing bandwidth and storage requirements.
 
-## Kubernetes GPU Scheduling Note
-
-The intended Sage deployment method is through pluginctl. The following command represents the intended Sage/Waggle deployment workflow:
-
-```bash
-sudo pluginctl run \
-  --name sage-bat-counter \
-  --selector kubernetes.io/hostname=00004cbb4713c0b9.agx-thor \
-  --resource nvidia.com/gpu=1 \
-  10.31.81.1:5000/local/plugin \
-  -- \
-  --camera-source bottom_camera
-```
-
-However, the test node did not advertise GPU resources to Kubernetes. The node did not report:
-
-```text
-nvidia.com/gpu: 1
-```
-
-because the NVIDIA Kubernetes Device Plugin was not active.
-
-As a result, Kubernetes could not schedule GPU workloads requesting:
-
-```bash
---resource nvidia.com/gpu=1
-```
-
-The plugin container itself was successfully validated using Podman with direct NVIDIA GPU access.
-
-See [Nightly Data Collection](#nightly-data-collection) for details on local data logging.
-
-Example workflow:
+Example long-term monitoring workflow:
 
 ```bash
 Night 1  -> env.count.bat = 12
@@ -513,19 +557,59 @@ Night 3  -> env.count.bat = 9
       Nightly Bat Population Trends
 ```
 
+## Kubernetes GPU Scheduling Note
+
+The intended Sage/Waggle deployment method uses `pluginctl` for scheduling workloads onto edge nodes.
+
+The expected deployment workflow is:
+
+```bash
+sudo pluginctl run \
+  --name sage-bat-counter \
+  --selector kubernetes.io/hostname=00004cbb4713c0b9.agx-thor \
+  --resource nvidia.com/gpu=1 \
+  10.31.81.1:5000/local/plugin \
+  -- \
+  --camera-source bottom_camera
+```
+
+However, during testing, the node did not advertise GPU resources to Kubernetes.
+
+The expected GPU resource:
+
+```text
+nvidia.com/gpu: 1
+```
+
+was unavailable because the NVIDIA Kubernetes Device Plugin was not active on the node.
+
+As a result, Kubernetes could not schedule workloads requesting:
+
+```bash
+--resource nvidia.com/gpu=1
+```
+
+The plugin container itself was successfully validated using Podman with direct NVIDIA GPU access.
+
 ---
 
 # Nightly Data Collection
 
-The edge plugin records bat counts locally for long-term monitoring.
+Sage Bat Counter is designed for autonomous long-term bat monitoring.
 
-After each processing session, the final unique bat count is appended to:
+During execution, the plugin records bat counts locally:
 
 ```bash
 data/nightly_counts.csv
 ```
 
-During continuous deployments, this allows each node to maintain a lightweight historical record of bat activity without storing full thermal video files.
+For deployments requiring persistent storage across container restarts, mount a host directory or Sage storage volume:
+
+```bash
+-v $(pwd)/data:/app/data
+```
+
+This allows each edge node to maintain a lightweight historical record of bat activity without storing large thermal video files.
 
 Example:
 
@@ -534,9 +618,7 @@ timestamp,bat_count
 2026-07-25T05:49:02.532,1
 ```
 
-This enables automated nightly monitoring where edge nodes collect population measurements over time without requiring researchers to manually download and process thermal recordings.
-
-The edge device publishes:
+The edge device continuously collects population measurements and publishes:
 
 ```bash
 env.count.bat
@@ -544,20 +626,22 @@ env.count.bat
 
 through the Sage platform while maintaining a local backup of collected measurements.
 
+This enables automated nightly monitoring without requiring researchers to manually download and process recordings.
+
 ---
 
 # Original Offline Pipeline
 
 Sage Bat Counter preserves the original offline processing workflow from the research pipeline.
 
-The offline pipeline is useful for:
+The offline workflow remains useful for:
 
 - Reproducing previous experiments
 - Evaluating model performance
-- Processing previously recorded thermal videos
-- Comparing edge results with offline results
+- Processing historical thermal recordings
+- Comparing edge and offline results
 
-The original workflow:
+The original offline pipeline:
 
 ```bash
 Thermal Video Recording
@@ -585,19 +669,23 @@ pixi run python run_bat_counter.py \
 --config configs/generated/PB_noaug_PB_P1.2.2_grey.mov_BGon_ROIon.yaml
 ```
 
-This workflow remains available for research and validation, while the Sage/Waggle plugin is the primary deployment path.
+The offline pipeline provides a research and validation workflow, while the Sage/Waggle plugin serves as the primary deployment pathway.
 
 # Development Environment
 
-Docker and pixi are provided for development, testing, and reproducing the research environment.
+Docker and Pixi are provided for development, testing, and reproducing the original research environment.
 
-The Sage/Waggle deployment uses the GPU-enabled plugin container built with:
+The production Sage/Waggle deployment uses the GPU-enabled plugin container:
 
 ```bash
 sudo pluginctl build plugin/
 ```
 
-The production container runs with NVIDIA CUDA support through the container runtime.
+The production container includes NVIDIA CUDA support through the container runtime.
+
+## Sage Camera Configuration
+
+For deployment, the default camera source should use the Sage/Waggle camera interface.
 
 ### `plugin/app.py`
 
@@ -631,7 +719,13 @@ default: "bottom_camera"
 
 ## Development Container
 
-Docker can be used to create a reproducible development environment containing CUDA, PyTorch, YOLO, and computer vision dependencies.
+Docker can be used to create a reproducible development environment containing:
+
+- CUDA
+- PyTorch
+- YOLOv11
+- OpenCV
+- Computer vision dependencies
 
 Build the development image:
 
@@ -679,13 +773,13 @@ pixi run python run_bat_counter.py \
 --config configs/generated/PB_noaug_PB_P1.2.2_grey.mov_BGon_ROIon.yaml
 ```
 
-This environment is maintained for offline experimentation and comparison with the edge deployment pipeline.
+This environment is maintained for offline experimentation and comparison against edge deployment results.
 
 ---
 
 # Performance
 
-The edge pipeline was tested on NVIDIA Thor hardware with GPU-accelerated inference.
+The Sage Bat Counter edge pipeline was tested on NVIDIA Thor hardware using GPU-accelerated inference.
 
 Measured performance:
 
@@ -713,15 +807,17 @@ Final unique bat count: 1
 Saved nightly count: 1 bats -> data/nightly_counts.csv
 ```
 
-Example edge test:
+Example edge validation run:
 
 ```text
 Camera source: videos/P1.1.2_grey.mov
-Frames captured: 200
-Inference frames: ~67 (--frame-skip 2)
+Frames captured: 529
+Inference frames: 529
 GPU: NVIDIA Thor CUDA acceleration
-Final unique bat count: 0
-Saved nightly count: 0 bats -> data/nightly_counts.csv
+Inference time: ~30 ms/frame
+Processing speed: ~10 FPS
+Final unique bat count: 6
+Saved nightly count: 6 bats -> data/nightly_counts.csv
 ```
 
 The validated edge deployment pipeline successfully performs:
@@ -729,13 +825,15 @@ The validated edge deployment pipeline successfully performs:
 - GPU-accelerated YOLOv11 inference
 - Thermal video processing
 - Background subtraction
-- ROI detection filtering
+- ROI filtering
 - SORT tracking
 - Configurable inference frame skipping
-- Nightly count collection
+- Automated nightly count collection
 - Sage data publishing
 
-The complete edge pipeline has been successfully validated and tested on NVIDIA Thor hardware using the NVIDIA container runtime. Deployment through Kubernetes GPU scheduling requires NVIDIA Device Plugin support on the node.
+The complete edge pipeline has been validated on NVIDIA Thor hardware using the NVIDIA container runtime.
+
+Kubernetes-based GPU deployment requires NVIDIA Device Plugin support on the target node.
 
 # Model Information
 
@@ -767,7 +865,8 @@ Adapted for edge deployment as part of the NSF Center for Pandemic Insights proj
 
 # Notes
 
-- Large video files are excluded from version control.
-- The plugin is optimized for GPU-enabled edge deployment.
-- The original offline pipeline remains available for research and comparison.
-- The primary output of the edge plugin is bat count data, not annotated video files.
+- Large thermal video files are excluded from version control.
+- The plugin is optimized for GPU-enabled Sage/Waggle edge deployment.
+- The original offline pipeline remains available for research validation and comparison.
+- The primary output of the edge plugin is bat count data rather than annotated video files.
+- The plugin container includes model weights, ROI configuration, and test data required for standalone execution.
