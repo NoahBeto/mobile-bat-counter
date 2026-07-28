@@ -123,7 +123,14 @@ def open_camera(camera_source: str, test_video: bool = False):
 
     if is_url and camera_source.startswith("rtsp://"):
         logger.info("Opening RTSP stream: %s", camera_source.split("@")[-1])
+        # Force TCP transport — UDP drops packets on high-bitrate 4K HEVC streams,
+        # causing cap.read() to return False intermittently.
+        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
         cap = cv2.VideoCapture(camera_source, cv2.CAP_FFMPEG)
+        if not cap.isOpened():
+            logger.error("Failed to open RTSP stream, retrying without TCP override...")
+            del os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"]
+            cap = cv2.VideoCapture(camera_source, cv2.CAP_FFMPEG)
         return cap, "rtsp"
 
     if is_file or test_video:
@@ -153,6 +160,12 @@ def grab_frame(cap, source_type: str):
     # rtsp or file
     ret, frame = cap.read()
     if not ret:
+        if source_type == "rtsp":
+            logger.warning(
+                "RTSP cap.read() returned False (ret=%s, frame=%s) — stream may be "
+                "dropping packets, redirecting, or unreachable from this pod",
+                ret, None if frame is None else frame.shape,
+            )
         return None, None
     ts = time.time_ns()
     return frame, ts
